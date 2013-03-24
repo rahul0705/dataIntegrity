@@ -3,7 +3,7 @@ import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
-public class BalancedSearchTree {
+public class BalancedSearchTree{
 	ArrayList<String> data;
 	String key;
 	String searchScheme;
