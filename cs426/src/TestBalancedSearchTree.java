@@ -13,5 +13,6 @@ public class TestBalancedSearchTree {
 				bst.readData(args[++i]);
 			}
 		}
+		System.out.println(bst.toString());
 	}
 }

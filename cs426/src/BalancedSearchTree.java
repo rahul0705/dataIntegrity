@@ -45,4 +45,11 @@ public class BalancedSearchTree{
 			e.printStackTrace();
 		}
 	}
+	public String toString(){
+		String s = new String();
+		for(int i = 0; i < data.size(); i++){
+			s = s + data.get(i);
+		}
+		return s;
+	}
 }
