@@ -1,5 +1,6 @@
 
 public class TestBalancedSearchTree {
+	
 	public static void main(String args[]){
 		BalancedSearchTree bst = new BalancedSearchTree();
 		for(int i = 0; i < args.length; i++){
