@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.Scanner;
 
 public class BalancedSearchTree{
-	ArrayList<String> data;
-	String key;
-	String searchScheme;
+	private ArrayList<String> data;
+	private String key;
+	private String searchScheme;
 	
 	
 	public BalancedSearchTree(){
