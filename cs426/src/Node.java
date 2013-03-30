@@ -60,9 +60,10 @@ public class Node<T> {
 
 	private void print(String prefix, boolean isTail) {
 		List<Node<T>> children = new LinkedList<Node<T>>();
-		if (this.hasChildren())
+		if (this.hasChildren()){
 			children.add(this.lChild);
 			children.add(this.rChild);
+		}
 
 		System.out.println(prefix + (isTail ? "^-->" : "|-->") + data.toString());
 		for (Iterator<Node<T>> iterator = children.iterator(); iterator.hasNext(); ) {
