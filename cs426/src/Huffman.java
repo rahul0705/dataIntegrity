@@ -11,17 +11,17 @@ import java.util.LinkedList;
 public class Huffman {
 	
     public static final int ALPHABET_N = 256;
-    private ArrayList<Node> freqs;
+    private ArrayList<NodeTest> freqs;
 	
     private int msg[];
     private int count;
-    Node root;
+    NodeTest root;
     
     private int nodescount;
 
     public Huffman() {
 	msg = new int[ALPHABET_N];
-	freqs = new ArrayList<Node>();
+	freqs = new ArrayList<NodeTest>();
 		
 	count = 0;
 	for (int i = 0; i < ALPHABET_N; i++) {
@@ -40,11 +40,11 @@ public class Huffman {
 	System.out.println();
     }    
 
-    private void printBFS(Node n) {
-	LinkedList<Node> queue = new LinkedList<Node>();
+    private void printBFS(NodeTest n) {
+	LinkedList<NodeTest> queue = new LinkedList<NodeTest>();
 	queue.add(n);
 	while (queue.size() > 0) {
-	    Node tmp = queue.removeFirst();
+	    NodeTest tmp = queue.removeFirst();
 	    if (tmp.hasChildren()) {
 		System.out.print("1");
 		queue.add(tmp.leftChild);
@@ -63,7 +63,7 @@ public class Huffman {
 	System.out.println(nodescount);
     }
 
-    public void markSubTree(String mark, Node n) {
+    public void markSubTree(String mark, NodeTest n) {
 	nodescount += 1;
 	
 	n.mark = mark;
@@ -93,9 +93,9 @@ public class Huffman {
     public void createTree(){
 	while (freqs.size() > 1) {
 	    Collections.sort(freqs, new CustomComparator());
-	    Node r = freqs.remove(0);
-	    Node l = freqs.remove(0);
-	    Node n = new Node(-1, r.frequency + l.frequency);
+	    NodeTest r = freqs.remove(0);
+	    NodeTest l = freqs.remove(0);
+	    NodeTest n = new NodeTest(-1, r.frequency + l.frequency);
 	    n.rightChild = r;
 	    n.leftChild = l;	
 	    freqs.add(n);
@@ -123,7 +123,7 @@ public class Huffman {
 	for (int i = 0; i < ALPHABET_N; i++) {
 	    if (msg[i] != 0) {
 		double f = (msg[i]) / ((double)count);	
-		freqs.add(new Node(i, f));
+		freqs.add(new NodeTest(i, f));
 	    } /*else {
 		freqs.add(new Node(i, 0));
 		}	*/				
