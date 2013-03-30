@@ -10,7 +10,7 @@ public class BalancedSearchTree{
 	
 	
 	public BalancedSearchTree(){
-		data = new ArrayList<String>();
+		this.data = new ArrayList<String>();
 	}
 	
 	public void readData(String dataFile){
@@ -28,7 +28,7 @@ public class BalancedSearchTree{
 		Scanner scan;
 		try {
 			scan = new Scanner(new File(keyFile));
-			key = scan.nextLine();
+			this.key = scan.nextLine();
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
@@ -38,13 +38,14 @@ public class BalancedSearchTree{
 		Scanner scan;
 		try {
 			scan = new Scanner(new File(treeFile));
-			searchScheme = scan.nextLine();
+			this.searchScheme = scan.nextLine();
 			while(scan.hasNext())
 				data.add(scan.nextLine());
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
 	}
+	
 	public String toString(){
 		String s = new String();
 		for(int i = 0; i < data.size(); i++){
