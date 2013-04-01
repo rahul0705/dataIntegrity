@@ -5,8 +5,8 @@ import java.util.Scanner;
 
 public class BalancedSearchTree{
 	private ArrayList<String> data;
-	private byte[] key;
-	private byte[] searchScheme;
+	private String key;
+	private String searchScheme;
 	
 	
 	public BalancedSearchTree(){
@@ -52,5 +52,12 @@ public class BalancedSearchTree{
 			s = s + data.get(i);
 		}
 		return s;
+	}
+	
+	public void testMac(){
+		byte[] b = HMAC.encode(this.toString(), key);
+		for(int i = 0; i < b.length; i++){
+			System.out.printf("%02x", b[i]);
+		}
 	}
 }
