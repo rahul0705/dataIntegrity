@@ -53,4 +53,11 @@ public class BalancedSearchTree{
 		}
 		return s;
 	}
+	
+	public void testMac(){
+		byte[] b = HMAC.encode(this.toString(), key);
+		for(int i = 0; i < b.length; i++){
+			System.out.printf("%02x", b[i]);
+		}
+	}
 }
