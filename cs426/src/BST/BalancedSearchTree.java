@@ -12,6 +12,7 @@ public class BalancedSearchTree{
 	private String key;
 	private String searchScheme;
 	private Node root;
+	private byte[] mark;
 	
 	
 	public BalancedSearchTree(){
@@ -53,9 +54,12 @@ public class BalancedSearchTree{
 	}
 	
 	public void buildTree(){
+		mark = HMAC.encode(this.toString().getBytes(), key);
 		int lowerBound = (int) Math.ceil((double)data.size()/4.0);
 		int capacity = (int) Math.floor(Math.log10(Math.ceil((double)data.size()/2.0))/Math.log10(2));
-		
+		int offset;
+		if (capacity == 0)
+			offset = 0;
 	}
 	
 	private void split(){
