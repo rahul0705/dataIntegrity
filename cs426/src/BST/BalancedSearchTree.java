@@ -5,15 +5,18 @@ import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Scanner;
 import Helpers.HMAC;
+import Helpers.Node;
 
 public class BalancedSearchTree{
 	private ArrayList<String> data;
 	private String key;
 	private String searchScheme;
+	private Node root;
 	
 	
 	public BalancedSearchTree(){
 		this.data = new ArrayList<String>();
+		root = new Node();
 	}
 	
 	public void readData(String dataFile){
@@ -49,18 +52,21 @@ public class BalancedSearchTree{
 		}
 	}
 	
+	public void buildTree(){
+		int lowerBound = (int) Math.ceil((double)data.size()/4.0);
+		int capacity = (int) Math.floor(Math.log10(Math.ceil((double)data.size()/2.0))/Math.log10(2));
+		
+	}
+	
+	private void split(){
+		
+	}
+	
 	public String toString(){
 		String s = new String();
 		for(int i = 0; i < data.size(); i++){
 			s = s + data.get(i);
 		}
 		return s;
-	}
-	
-	public void testMac(){
-		byte[] b = HMAC.encode(this.toString(), key);
-		for(int i = 0; i < b.length; i++){
-			System.out.printf("%02x", b[i]);
-		}
 	}
 }

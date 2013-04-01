@@ -14,6 +14,7 @@ public class Node<T> {
 		this.lChild = null;
 		this.rChild = null;
 	}
+	
 	public Node(T data){
 		this.data = data;
 		this.lChild = null;

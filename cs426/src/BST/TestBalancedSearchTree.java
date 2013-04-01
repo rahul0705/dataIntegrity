@@ -15,7 +15,6 @@ public class TestBalancedSearchTree {
 				bst.readData(args[++i]);
 			}
 		}
-		//System.out.println(bst.toString());
-		bst.testMac();
+		System.out.println(bst.toString());
 	}
 }
