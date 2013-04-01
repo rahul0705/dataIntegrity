@@ -5,8 +5,8 @@ import java.util.Scanner;
 
 public class BalancedSearchTree{
 	private ArrayList<String> data;
-	private String key;
-	private String searchScheme;
+	private byte[] key;
+	private byte[] searchScheme;
 	
 	
 	public BalancedSearchTree(){
