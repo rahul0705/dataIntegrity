@@ -1,7 +1,10 @@
+package BST;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Scanner;
+import Helpers.HMAC;
 
 public class BalancedSearchTree{
 	private ArrayList<String> data;

@@ -1,3 +1,5 @@
+package BST;
+
 public class TestBalancedSearchTree {
 	
 	public static void main(String args[]){
