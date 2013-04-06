@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Scanner;
 import java.util.Stack;
 import java.util.LinkedList;
@@ -14,23 +15,30 @@ import Helpers.HMAC;
 public class Huffman {
 
 	private static final int ALPHABET_COUNT = 256;
-	private static final boolean INCLUDE_ZEROS = false;
+	private static final boolean INCLUDE_ZEROS = true;
+	private static final String correct = "1111111111111111011111111111111111111111111111111111111111111000000000000000000000000000000000000000000000000000000001010001010111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111000000000000000000000000010000000000000000000000000000000000000011111111111111111111111111111111111111111111111111111111111111110000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+	
+	private HashMap<Byte, String> code_book;
 	
 	private int input_count[];
 	private int totalchars;
 	
+	private byte[] uncompressed_msg;
 	
 	private ArrayList<HuffmanNode> freqs;
 	private ArrayList<Byte> msg;
+	private ArrayList<HuffmanNode> leaves;
+	
 	private String key;
+	private String hmac_bit_string;
 
 	private HuffmanNode root;
 	
 	public static void main(String[] args) {
 		String keyfile, inputfile;
 		keyfile = "input/bst_test_key.txt";
-		//inputfile = "input/huff_test_mssg.txt";
-		inputfile = "input/huffrandom.txt";
+		inputfile = "input/huff_test_mssg.txt";
+		//inputfile = "input/huffrandom.txt";
 		
 		Huffman h = new Huffman(keyfile, inputfile);
 	}
@@ -41,19 +49,60 @@ public class Huffman {
 		
 		input_count = new int[ALPHABET_COUNT];
 		key = "";
+		hmac_bit_string = "";
+		leaves = new ArrayList<HuffmanNode>();
+		code_book = new HashMap<Byte, String>();
 		
 		for (int i = 0; i < ALPHABET_COUNT; i++)
 			input_count[i] = 0;
 		
 		readKey(file1);
-		System.out.println("Key = " + key);
+		//System.out.println("Key  = " + key);
 		readMsg(file2);
 		calculateFrequency();
 		createFrequencyTree();
-		root.print();
-		//byte[] key = HMAC.encode(msg.toArray(), key);
+		//root.print();
+		
+		int length = msg.size();
+		uncompressed_msg = new byte[length];
+		
+		for (int i = 0; i < length; i++) {
+			uncompressed_msg[i] = msg.get(i); 
+		}
+		
+		byte[] hmac = HMAC.encode(uncompressed_msg, key);
+		hmac_bit_string = HMAC.toBitString(hmac);
+		//System.out.println("Hmac = " + hmac_bit_string);
+		//System.out.println();
+		markTree();
+		printBFS();
+		//System.out.println(correct);
+		
+		for (int i = 0; i < leaves.size(); i++) {
+			String mark = getMark(leaves.get(i), "");
+			char c = leaves.get(i).symbol.charAt(0);
+			byte b = (byte)c;
+			
+			Byte val = new Byte(b);
+			code_book.put(val, mark);
+			//System.out.println(mark);
+			System.out.println(b);
+		}
+		
+		
+		for (int i = 0; i < uncompressed_msg.length; i++) {
+			System.out.println("" + code_book.get(uncompressed_msg[i]));
+		}
+		
 	}
-	
+
+	private String getMark(HuffmanNode n, String mark) {
+		if (n == null) {
+			return mark;
+		}
+		
+		return getMark(n.parent, mark + n.mark);
+	}
 	public void readKey(String filename) {
 		
 		File file = new File(filename);
@@ -115,7 +164,6 @@ public class Huffman {
 			freqs.add(parent);
 		}
 		root = freqs.get(0);
-		System.out.println(freqs.get(0).frequency);
 	}
 	
 	@SuppressWarnings("unused")
@@ -140,13 +188,11 @@ public class Huffman {
 		}
 	}
 	
-	
 	public void printBFS() {
 		printBFS(root);
 		System.out.println();
 	}    
 
-	
 	private void printBFS(HuffmanNode n) {
 		LinkedList<HuffmanNode> queue = new LinkedList<HuffmanNode>();
 		queue.add(n);
@@ -159,40 +205,57 @@ public class Huffman {
 			}
 			else {
 				System.out.print("0");
+				leaves.add(tmp);
 			}
 		}
 	}
-
-	/*
+	
+	
 	public void markTree() {
-		root = freqs.get(0);
-		nodescount = 0;
-		markSubTree("0", root);
-		System.out.println(nodescount);
+		LinkedList<HuffmanNode> queue = new LinkedList<HuffmanNode>();
+		int index = 0;
+		queue.add(root);
+		
+		while (queue.size() > 0) {
+			HuffmanNode n = queue.removeFirst();
+			char mark = hmac_bit_string.charAt(index);
+			
+			if (n.hasChildren()) {
+				HuffmanNode least_weighty;
+				HuffmanNode most_weighty;
+				
+				CustomComparator cmp = new CustomComparator();
+				
+				if (cmp.compare(n.leftChild, n.rightChild) < 0) {
+					least_weighty = n.leftChild;
+					most_weighty = n.rightChild;
+				} else {
+					least_weighty = n.rightChild;
+					most_weighty = n.leftChild;
+				}
+				
+				if (mark == '1') {
+					n.rightChild = least_weighty;
+					n.rightChild.mark = '1';
+					n.leftChild = most_weighty;
+					n.leftChild.mark = '0';
+				} else if (mark == '0') {
+					n.rightChild = most_weighty;
+					n.rightChild.mark = '0';
+					n.leftChild = least_weighty;
+					n.rightChild.mark = '1';
+				}
+				
+				n.leftChild.parent = n;
+				n.rightChild.parent = n;
+				
+				queue.add(n.leftChild);
+				queue.add(n.rightChild);	
+				
+				index += 1;
+			}	
+		}
 	}
 
 	
-	public void markSubTree(String mark, HuffmanNode n) {
-		nodescount += 1;
-
-		n.mark = mark;
-
-		if (n.leftChild != null && n.rightChild != null) {
-
-			if (n.leftChild.frequency > n.rightChild.frequency) {
-				markSubTree(n.mark + "1", n.leftChild);
-				markSubTree(n.mark + "0", n.rightChild);
-			}
-			else {
-				markSubTree(n.mark + "1", n.leftChild);
-				markSubTree(n.mark + "0", n.rightChild);
-			}
-
-		}
-	}
-
-	public void displayFrequencyTree() {
-		freqs.get(0).print();
-	}
-	*/
 }
