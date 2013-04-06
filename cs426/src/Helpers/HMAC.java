@@ -21,4 +21,20 @@ public class HMAC {
 		}
 		return hmac;
 	}
+	
+	public static String toBitString(byte[] hmac) {
+		int length = hmac.length;
+		String bit_string = "";
+		for (int i = 0; i < length; i++) {
+			for (int j = 0; j < 8; j++) {
+				bit_string += getBit(hmac[i], j);
+			}
+		}
+		
+		return bit_string;
+	}
+	
+	private static int getBit(byte value, int position) {
+		return (value >> position) & 1;
+	}
 }
