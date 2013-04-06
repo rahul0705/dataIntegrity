@@ -26,7 +26,7 @@ public class HMAC {
 		int length = hmac.length;
 		String bit_string = "";
 		for (int i = 0; i < length; i++) {
-			for (int j = 0; j < 8; j++) {
+			for (int j = 7; j >= 0; j--) {
 				bit_string += getBit(hmac[i], j);
 			}
 		}
