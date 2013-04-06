@@ -1,4 +1,3 @@
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -10,13 +9,17 @@ public class HuffmanNode {
 	
 	public HuffmanNode rightChild;
 	public HuffmanNode leftChild;
-
+	public HuffmanNode parent;
+	
+	public char mark;
+	
 	public HuffmanNode(String symbol, double freq) {
 		this.frequency = freq;
 		this.symbol = symbol;
 		
 		rightChild = null;
 		leftChild = null;
+		parent = null;
 	}
 
 	public boolean hasChildren() {
@@ -32,12 +35,12 @@ public class HuffmanNode {
 	private void print(String prefix, boolean isTail) {
 		List<HuffmanNode> children = new LinkedList<HuffmanNode>();
 		
-		if (leftChild != null) {
-			children.add(leftChild);
-		}
-		
 		if (rightChild != null) {
 			children.add(rightChild);
+		}
+		
+		if (leftChild != null) {
+			children.add(leftChild);
 		}
 		
 		System.out.println(prefix + (isTail ? "^-->" : "|-->") + frequency);
