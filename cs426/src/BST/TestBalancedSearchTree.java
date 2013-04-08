@@ -16,6 +16,6 @@ public class TestBalancedSearchTree {
 			}
 		}
 		bst.buildTree();
-		bst.printBFS();
+		bst.printTree();
 	}
 }

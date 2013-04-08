@@ -84,6 +84,10 @@ public class BSTNode{
 		return this.end;
 	}
 	
+	public int size() {
+		return this.end - this.start;
+	}
+	
 	public BSTNode getNextChild(){
 		BSTNode ret = this.getLeftChild();
 		if(this.getLeftChild().visited)
