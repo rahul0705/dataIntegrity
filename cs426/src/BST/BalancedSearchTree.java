@@ -17,10 +17,12 @@ public class BalancedSearchTree{
 	private String mark;
 	private LinkedList<BSTNode> q;
 	private int markIndex = 0;
+	ArrayList<BSTNode> leaves;
 
 
 	public BalancedSearchTree(){
 		this.data = new ArrayList<String>();
+		this.leaves = new ArrayList<BSTNode>();
 		root = new BSTNode();
 		q = new LinkedList<BSTNode>();
 	}
@@ -107,24 +109,33 @@ public class BalancedSearchTree{
 		while(!q.isEmpty()){
 			buildTree(q.removeFirst());
 		}
-		root.print();
 	}
 
-	public void bfs(){
-		Queue<BSTNode> queue = new LinkedList<BSTNode>();
-		queue.add(root);
-		System.out.print(root);
-		root.visited = true;
-		while(!queue.isEmpty()) {
-			BSTNode node = queue.remove();
-			BSTNode child=null;
-			while((child = node.getNextChild()) != null) {
-				child.visited = true;
-				System.out.print(child);
-				queue.add(child);
+	public void printBFS() {
+		printBFS(root);
+	}    
+
+	private void printBFS(BSTNode n) {
+		LinkedList<BSTNode> queue = new LinkedList<BSTNode>();
+		queue.add(n);
+		while (queue.size() > 0) {
+			BSTNode tmp = queue.removeFirst();
+			if (tmp.hasChildren()) {
+				System.out.print("1");
+				queue.add(tmp.getLeftChild());
+				queue.add(tmp.getRightChild());
+			}
+			else {
+				System.out.print("0");
+				leaves.add(tmp);
 			}
 		}
+		System.out.println();
+		for(BSTNode node : leaves){
+			System.out.println(node.getData());
+		}
 	}
+	
 	public String toString(){
 		String s = new String();
 		for(int i = 0; i < data.size(); i++){

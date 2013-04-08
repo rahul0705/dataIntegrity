@@ -35,15 +35,21 @@ public class BSTNode{
 	}
 
 	public boolean hasLeftChild(){
-		return (this.lChild != null) ? true : false;
+		if(this.lChild != null)
+			return true;
+		return false;
 	}
 
 	public boolean hasRightChild(){
-		return (this.rChild != null) ? true : false;
+		if(this.rChild != null)
+			return true;
+		return false;
 	}
 
 	public boolean hasChildren(){
-		return (this.hasLeftChild() && this.hasLeftChild());
+		if (this.rChild != null && this.lChild != null)
+			return true;
+		return false;
 	}
 	
 	public void setMark(String mark){
@@ -89,16 +95,6 @@ public class BSTNode{
 
 	public void print() {
 		print("", true);
-	}
-	
-	public String toString(){
-		/*if(data != null)
-			return data.toString();
-		else
-			return "";*/
-		if(this.hasChildren())
-			return "1";
-		return "0";
 	}
 
 	private void print(String prefix, boolean isTail) {
