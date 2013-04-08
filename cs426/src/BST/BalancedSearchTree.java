@@ -79,7 +79,7 @@ public class BalancedSearchTree{
 				lChild.setStart(n.getStart());
 				lChild.setEnd(n.getStart() + lowerBound+offset);
 				q.addLast(lChild);
-			}else if((n.getStart() + offset + lowerBound) == n.getEnd() - 2){
+			}else if((n.getStart() + offset + lowerBound) == n.getStart() + 1){
 				lChild.setData(data.get(n.getStart()));
 				rChild.setStart(n.getStart() + lowerBound+offset);
 				rChild.setEnd(n.getEnd());
