@@ -3,6 +3,7 @@ package BST;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Scanner;
 import Helpers.HMAC;
@@ -60,7 +61,67 @@ public class BalancedSearchTree{
 			e.printStackTrace();
 		}
 	}
-
+	
+	public void buildToValidate(){
+		mark = new String();
+		root.setStart(0);
+		root.setEnd(data.size());
+		buildTreeQueue.addLast(root);
+		for(int i=0,j=0;i<searchScheme.length();i++){
+			BSTNode n = buildTreeQueue.removeFirst();
+			if(Integer.parseInt(""+searchScheme.charAt(i))==1){
+				BSTNode lChild = new BSTNode();
+				BSTNode rChild = new BSTNode();
+				n.setLeftChild(lChild);
+				n.setRightChild(rChild);
+				buildTreeQueue.addLast(lChild);
+				buildTreeQueue.addLast(rChild);
+			}else{
+				n.setData(data.get(j++));
+			}
+		}
+		countChildren(root);
+		buildToValidate(root);
+		validate();
+	}
+	
+	public int countChildren(BSTNode n){
+		if(n.hasChildren()){
+			int lTotal = countChildren(n.getLeftChild());
+			int rTotal = countChildren(n.getRightChild());
+			n.setCount(lTotal+rTotal);
+			return n.getCount();
+		}else{
+			n.setCount(1);
+			return 1;
+		}
+	}
+	
+	public void validate(){
+		Collections.sort(data);
+		String hmac= HMAC.toBitString(HMAC.encode(this.toString().getBytes(), key));
+		
+	}
+	
+	public void buildToValidate(BSTNode n){
+		int lowerBound = (int) Math.ceil((double)n.size()/4.0);
+		int capacity = (int) Math.floor(Math.log10(Math.ceil((double)n.size()/2.0))/Math.log10(2));
+		if(capacity!=0){
+			BSTNode lChild = n.getLeftChild();
+			BSTNode rChild = n.getRightChild();
+			int offset = lChild.getCount()-lowerBound;
+			String index = Integer.toBinaryString(offset);
+			mark.concat(index.substring(index.length()-capacity));
+			lChild.setStart(n.getStart());
+			lChild.setEnd(n.getStart() + lowerBound+offset);
+			rChild.setStart(n.getStart() + lowerBound+offset);
+			rChild.setEnd(n.getEnd());
+			buildToValidate(lChild);
+			buildToValidate(rChild);
+		}
+		return;
+	}
+	
 	public void buildTree(){
 		mark = HMAC.toBitString(HMAC.encode(this.toString().getBytes(), key));
 		root.setStart(0);

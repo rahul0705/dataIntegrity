@@ -8,6 +8,7 @@ public class BSTNode{
 	private String data;
 	private int start;
 	private int end;
+	private int count;
 	private String mark;
 	public boolean visited = false;
 	private BSTNode lChild;
@@ -57,7 +58,7 @@ public class BSTNode{
 	}
 	
 	public void setData(String data){
-			this.data = data;
+		this.data = data;
 	}
 	
 	public void setStart(int start) {
@@ -66,6 +67,10 @@ public class BSTNode{
 	
 	public void setEnd(int end) {
 		this.end = end;
+	}
+	
+	public void setCount(int count){
+		this.count = count;
 	}
 	
 	public String getMark(){
@@ -82,6 +87,10 @@ public class BSTNode{
 	
 	public int getEnd() {
 		return this.end;
+	}
+	
+	public int getCount(){
+		return this.count;
 	}
 	
 	public int size() {
