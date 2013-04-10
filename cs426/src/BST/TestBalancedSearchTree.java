@@ -15,7 +15,8 @@ public class TestBalancedSearchTree {
 				bst.readData(args[++i]);
 			}
 		}
-		bst.buildTree();
-		bst.printTree();
+		bst.buildToValidate();
+		//bst.buildTree();
+		//bst.printTree();
 	}
 }

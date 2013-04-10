@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Scanner;
 import Helpers.HMAC;
+import Helpers.SortData;
 
 public class BalancedSearchTree{
 
@@ -81,7 +82,10 @@ public class BalancedSearchTree{
 			}
 		}
 		countChildren(root);
-		buildToValidate(root);
+		buildTreeQueue.addLast(root);
+		while(!buildTreeQueue.isEmpty()){
+			buildToValidate(buildTreeQueue.removeFirst());
+		}
 		validate();
 	}
 	
@@ -97,12 +101,6 @@ public class BalancedSearchTree{
 		}
 	}
 	
-	public void validate(){
-		Collections.sort(data);
-		String hmac= HMAC.toBitString(HMAC.encode(this.toString().getBytes(), key));
-		
-	}
-	
 	public void buildToValidate(BSTNode n){
 		int lowerBound = (int) Math.ceil((double)n.size()/4.0);
 		int capacity = (int) Math.floor(Math.log10(Math.ceil((double)n.size()/2.0))/Math.log10(2));
@@ -111,15 +109,35 @@ public class BalancedSearchTree{
 			BSTNode rChild = n.getRightChild();
 			int offset = lChild.getCount()-lowerBound;
 			String index = Integer.toBinaryString(offset);
-			mark.concat(index.substring(index.length()-capacity));
+			if(index.length()<capacity){
+				String leftPad = "";
+				for(int i=0;i<capacity-index.length();i++){
+					leftPad+="0";
+				}
+				mark+=leftPad+index;
+			}else{
+				mark+=index.substring(index.length()-capacity);
+			}
 			lChild.setStart(n.getStart());
 			lChild.setEnd(n.getStart() + lowerBound+offset);
 			rChild.setStart(n.getStart() + lowerBound+offset);
 			rChild.setEnd(n.getEnd());
-			buildToValidate(lChild);
-			buildToValidate(rChild);
+			buildTreeQueue.addLast(lChild);
+			buildTreeQueue.addLast(rChild);
 		}
 		return;
+	}
+	
+	public void validate(){
+		Collections.sort(data,new SortData());
+		String hmac= HMAC.toBitString(HMAC.encode(this.toString().getBytes(), key));
+		for(int i=0;i<hmac.length();i++){
+			if(mark.charAt(i)!=hmac.charAt(i)){
+				System.out.println("Modified");
+				return;
+			}
+		}
+		System.out.println("Not Modified");
 	}
 	
 	public void buildTree(){
