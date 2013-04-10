@@ -2,10 +2,16 @@ package Helpers;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 public class HMAC {
+	public static String encode(ArrayList<String> data, String key){
+		String mark = "";
+		return mark;
+	}
 	public static byte[] encode(byte[] message, String key){
 		byte[] hmac = null;
 		try {
