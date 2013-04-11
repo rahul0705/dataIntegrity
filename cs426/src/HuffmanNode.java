@@ -11,8 +11,6 @@ public class HuffmanNode {
 	public HuffmanNode leftChild;
 	public HuffmanNode parent;
 	
-	public char mark;
-	
 	public HuffmanNode(String symbol, double freq) {
 		this.frequency = freq;
 		this.symbol = symbol;

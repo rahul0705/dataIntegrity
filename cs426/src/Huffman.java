@@ -16,7 +16,6 @@ import Helpers.HMAC;
 public class Huffman {
 
 	private static final int ALPHABET_COUNT = 256;
-	private static final boolean INCLUDE_ZEROS = true;
 	
 	private HashMap<Byte, String> code_book;
 	
@@ -41,10 +40,39 @@ public class Huffman {
 		String keyfile, inputfile, treefile;
 		keyfile = "input/bst_test_key.txt";
 		inputfile = "input/huff_test_mssg.txt";	
-		treefile = "output/1b_clean.txt";
+		treefile = "output/1b_dirty.txt";
 		
 		Huffman h = new Huffman(keyfile, inputfile);
 		//Huffman h = new Huffman(keyfile, treefile, 1);
+	}
+	
+	public Huffman(String file1, String file2) {
+		msg = new ArrayList<Byte>();
+		freqs = new ArrayList<HuffmanNode>();
+		leaves = new ArrayList<HuffmanNode>();
+		code_book = new HashMap<Byte, String>();
+		
+		key = "";
+		hmac_bit_string = "";
+
+		input_count = new int[ALPHABET_COUNT];
+		for (int i = 0; i < ALPHABET_COUNT; i++)
+			input_count[i] = 0;
+		
+		readKey(file1);
+		readMsg(file2);
+		calculateFrequency();
+		createFrequencyTree();
+		
+		hmac_bit_string = HMAC.toBitString(HMAC.encode(uncompressed_msg, key));
+		
+		markTree();
+		generateCodeBook();
+		
+		//Print Structure Based on file format
+		printTreeStructure();
+		printLeaves();
+		printCompressedMsg();
 	}
 	
 	public Huffman(String file1, String file2, int val) {
@@ -58,223 +86,80 @@ public class Huffman {
 		leaves = new ArrayList<HuffmanNode>();
 		leaf_values = new ArrayList<String>();
 		
-		readKey(file1);
-		readTree(file2);	
-		constructTree();
-		
-		
 		input_count = new int[ALPHABET_COUNT];
 		for (int i = 0; i < ALPHABET_COUNT; i++)
 			input_count[i] = 0;
 		
-		
-		int length = msg.size();
-		uncompressed_msg = new byte[length];
-		totalchars = length;
-		for (int i = 0; i < length; i++) {
-			uncompressed_msg[i] = msg.get(i); 
-			input_count[(int)msg.get(i)]++;
-		}
-		
-		calculateFrequency();
-		
-		for (HuffmanNode n: leaves) {
-			for (HuffmanNode f : freqs) {
-				if (n.symbol.equals(f.symbol)) {
-					n.frequency = f.frequency;
-				}
-			}
-		}
-		
-		byte[] hmac = HMAC.encode(uncompressed_msg, key);
-		hmac_bit_string = HMAC.toBitString(hmac);
-		System.out.println(hmac_bit_string);
-		buildUp();
-		extractMark();
-	}
+		readKey(file1);
+		readTree(file2);	
+		constructTree();
 
-	public void extractMark() {
-		CustomComparator cmp = new CustomComparator();
-		LinkedList<HuffmanNode> queue = new LinkedList<HuffmanNode>();
-		queue.add(root);
-		while (queue.size() > 0) {
-			HuffmanNode n = queue.removeFirst();
-			if (n.hasChildren()) {
-				queue.add(n.leftChild);
-				queue.add(n.rightChild);
-				
-				if (cmp.compare(n.leftChild, n.rightChild) < 0) {
-					System.out.print("0");
-				}
-				else {
-					System.out.print("1");
-				}
-			}
-		}
+		hmac_bit_string = HMAC.toBitString(HMAC.encode(uncompressed_msg, key));
+		String mark = extractMark();
 		
-	}
-	
-	public void buildUp() {
-		CustomComparator cmp = new CustomComparator();
-		
-		LinkedList<HuffmanNode> queue = new LinkedList<HuffmanNode>();
-		ArrayList<HuffmanNode> excludelist = new ArrayList<HuffmanNode>();
-		LinkedList<HuffmanNode> nodes;
-		while (true) {
-			nodes = new LinkedList<HuffmanNode>();
-			queue.add(root);
-			while (queue.size() > 0) {
-				HuffmanNode tmp = queue.removeFirst();
-				if (tmp.hasChildren() && tmp.symbol.equals("")) {
-					queue.add(tmp.leftChild);
-					queue.add(tmp.rightChild);
-				}
-				else {
-					if (!excludelist.contains(tmp)) {
-						nodes.addFirst(tmp);
-					}
-				}
-			}
-			
-			HuffmanNode r = nodes.removeFirst();
-			HuffmanNode l = nodes.removeFirst();
-			
-			if (r.parent != l.parent){
-				System.out.println("Broke");
-			}
-			
-			if (cmp.compare(l, r) < 0) {
-				r.parent.symbol = l.symbol + r.symbol;
-				r.mark = '0';
-				l.mark = '1';
-			} else {
-				r.parent.symbol = r.symbol + l.symbol;
-				l.mark = '0';
-				r.mark = '1';
-			}
-			
-			r.parent.frequency = r.frequency + l.frequency;
-			
-			excludelist.add(r);
-			excludelist.add(l);
-			
-			if (r.parent == root)
+		boolean modified = false;
+		int length = mark.length();
+		for (int i = 0; i < length; i++) {
+			if (mark.charAt(i) != hmac_bit_string.charAt(i)) {
+				modified = true;
 				break;
+			}
+		}
+		
+		if (modified)
+			System.out.println("Tree Modified");
+		else 
+			System.out.println("Tree Validated");
+		
+		//printUncompressedMsg();
+	}
+
+	//Read Key file
+	//File must be one line long
+	public void readKey(String filename) {
+		File file = new File(filename);		
+		try {
+			Scanner scr = new Scanner(file);
+			if (!scr.hasNextLine()) {
+				System.out.println("Invalid Key");
+				System.exit(0);
+			} else {
+				key = scr.nextLine();
+			}
+		} catch (FileNotFoundException e) {
+			System.out.println(e);
+			System.exit(0);
 		}
 	}
-	public Huffman(String file1, String file2) {
-		freqs = new ArrayList<HuffmanNode>();
-		msg = new ArrayList<Byte>();
+	
+	//Read original message
+	//Message is read in by byte. Using an inputstream
+	public void readMsg(String str) {
+		try {
+			InputStream is = new FileInputStream(str);
+			while(is.available() > 0) {
+				int b = is.read();
+				input_count[b]++;
+				totalchars += 1;
+				msg.add((byte)b);	
+			}
+		} catch (IOException e) {
+			System.out.println(e);
+			System.exit(0);
+		}
 		
-		input_count = new int[ALPHABET_COUNT];
-		key = "";
-		hmac_bit_string = "";
-		leaves = new ArrayList<HuffmanNode>();
-		code_book = new HashMap<Byte, String>();
-		
-		for (int i = 0; i < ALPHABET_COUNT; i++)
-			input_count[i] = 0;
-		
-		readKey(file1);
-		readMsg(file2);
-		calculateFrequency();
-		createFrequencyTree();
-		
+		//Store message into byte array which can be used later for calculating the HMAC
 		int length = msg.size();
 		uncompressed_msg = new byte[length];
-		
-		for (int i = 0; i < length; i++) {
+		for (int i = 0; i < length; i++)
 			uncompressed_msg[i] = msg.get(i); 
-		}
-		
-		byte[] hmac = HMAC.encode(uncompressed_msg, key);
-		hmac_bit_string = HMAC.toBitString(hmac);
-		System.out.println(hmac_bit_string);
-		markTree();
-		
-		extractMark();
-		System.out.println();
-		//printBFS();
-		
-		//generateCodeBook();
-		//printLeaves();
-		codeBook2();
-		System.out.println("01010001010011110101011110000111010111010011100100110000110011110011111110110000011110100110010111011011011000010101101010001011010100101100010100101000010111001010111110011110111111010001110101010111010110011101010001111001110011000111101010101000101111001010101011111000001100000001001001100000011011101101110011100111011110010111001000111010011010010100111110111000110001101010011111111110011100011000111110111001111011010111001001000000010100100111111001100100110010001011111101110111011101000001110000111000110111100111101010011001110101011100110110111010000000100111101101110001101001001010110011010011010000010111000101111101100010111100100101111110111111100000111101010001000111111111111010010101110100101010101111101010101010110011110100001111000011001011010111101000000111100100100101101111001110011010111010100110101110001110000111100010000010011101000110010100011111000100110110001010000010100110110101110101011011100110110101101010101101001000000001010011101011100110100111010010111000101010001010100100010001011111101110101101101001110011001101001111010001000111001010010111100000010100101101110001101111100010110110101101101101001111101001000000010011011001100001100111111000111100101111111000100101011010111011011000110110111110100011000111010101111000001100111001101100000000110011010000101010011000100000000000001001100111100101001101111110100101000000100011011101100011101100101101110110011011110000110001110001010001011101111101100001000001011010101001111010111111000010011010000111000010010000110110100010111111000001101110110001101001101010110011101110001110101000100001010010101100110001111111111100010110111101111001010100111001011010111111011100110110101000001010100100011110100101101110001110011010001111101110110000010000111001011111011111010000010101001000100010011111001001100100110110000111100100111011111110100011110010111111001001101000010000001011011110101100110010001100000100110100101110001001100110011010110100110010111100001001101010111011110101010111101110011000111101110101001111111111001010100110100100110010000110011100011100001011000101001111100111100110011101001000110001101001111100011111100110001001001011111110010010001101111011111010101010101101111011010000110011010011111111010101001111111011000011100100001010100001010010010111010001000010011111001001011110110011101011000001101010110111100101011110010000101111010000111111101100010010111000001110101100100010110111111110101100101100010011000011101000111100011010011111010000000010100111001101101100100001100010001110100000000011010011111011110000111110101110001010100111110110011010101110110101111110111111111001110100001100100010101011110010011101010000100000011110011001111001110101001001100000100111101001110011001101100101100101101111000000011001000110001110101100000000001101011101011011110110010011011011010010101011011010110001111010001011010011111011110100100100010100001111101101000001000100110010010101010001110111001011011111101010101101101101101001010010100010110101110001111111000100010000110010111010111100001000001101101010100001110111111110011110010111101111000101100100011010101010111111100010101101100100111000011110100110001011101011011100100011110011111101101110101111011110110111100100110000100011001000111110000110011100111111110001111011000001111100110100011001011010111001101001111100111000010001011001010000001000110111011000001000001110100111011110100010110111001011001111110011000010111011001011100000010110101011000000101011111001010010101111111110111001111011110000110010100011100111110111000010100001011100111000110010010111100101111101001101111010100110010010110000010001010110000001111011111000000110000110111010000100000101010000111000101100100110100010010011010010011011101011101010100001100000111011011011111011101100001011010110111101111001001111010100111001101010011010111000011010011001011111110011011000100101101001010111101111000001001010001010110100001011100110101010111010001001001101100111111101110001110100101011010100000101100010110110111001101110110111110010001110001011101110001011100100010011010101110101111100101111010100101011100110000001000111011111101110000011100111001110101000110010111111111111001110101011011010011111110010101000100011110001000000110101011101011100111111100101000010010001110101010000001110110110011010111010010011101010001011111011001001100110011101011101000011101000011110110111000001000100101011110111111000110000010100010001011110001110011001011010001110011000010011110000100101011011000110101011110110111111011000011000101001110001011010010010111101001100001110110111111011111001010110110000000010111000111100000000011111001001011101101100000100110110011000101111001110000100011010111011110000001101010111100000110111110001101111110100011110011000111000010010111110110000111100110001101011101000110101101101000000110001101101011011001000101110110001111101000001100100111010001001111101010010011111110110000100101010111110110100110100001011001110001111101111100001001111101111100011010000110011001011110111000001010111001011110100011101111011110010101000111010100110100000010100100011111001001001100110111011100010010101001100101011101010111101001000010001001100101011100111111110011000010111011110101001011010011101101101101000010010101111110100011111010110001000000100101010010001100110001111000000001011010110111110101010111001011111101000011110101100110001011101011111111111001110111100000011010011100000110111111011010111111001010001110011100001001000111010001101001100000001001100000111011000011111111011111101000110011101100010000111101010010001001010010010000000110101000011000101100000000011101001100000100101110101001010110101101010100010101100001100001100100000010110001001001011101111010100000100011101101110110011110100100101100110110111111111110110001110101100111000011011111010011111111001101011110110011000100000001111001101010110111101010010110101011100101101000001100011101101011010101000110100101110001000011111100111001000011100001001011001010011110110000110111101110110011011111111001010111101000110101111011000110110111000011001000001001011100100111000101001110000011110001000000110111101000111011010100110000100110010001111110100100001010000111011011000011101110010011000010010011100001000001100110011110110110101101100010000000011100010010000010000010100000111111111101011110000011111001001110100111110011111101001011111000110110001001010011100110010000001011011111011001111110100001011011010101101011111110011011110010101100101000001111111011011100000011101001111101111111000110111010101100010010111111000000111000001110001010101110111001111011111100011100010101011011101100110001110011011101010001011100101011111111111001110001100011011011101100110001110111011011101101111100111000001100110001111001001000001010110010111010010010101111001010000001001111000010100010110111110101000011000100100010100101000101100001010010000010110101110010101001111110100110101111111010101111010110001101100100000110010110000101010010000100100110000111000101001111001100110011101111100010010000100111010110110110100101101000010101111100011010010011111010001101001011110100000111100110111110111011100110011101010111011111100110110101010011111001111001000100100001001000111010111000101100001010001110100000000110011101000000110010110010001011010001100011110011111110101001001000001111100010011101110101011011001010110101000111101101000011001110101100110101011101111010001111111011001101101011110110010000001101001001100100100111100101010010110010000111100110100101000010010010010111101101101111101011001100001010000001111111011000010100110100010111101101111000101001110011001110111001100111100011110110010010101001001101110100010100111001011011110111100001111001111111111011111111110001011111010110100101001000000000101100100010011100011110111101111011101110101111111100111010000011010001010000100011010101111001110001100111011111110011111111111111100111100110010101101011110011110011110001001000100110000111110111011111010100000011000110010001101111001000110101100111010000110101000110110001001000001101111111010011010000111100010100111111010010001110001100001110101111101111110110111111111101110111010100110011000010001101011010001010110111010001010100010110001011000111101100011110011100010010010111001110000000101111011011111101110101111001101100001101011111101101011101100000110101101000100100100000111001111010111110110001110001010110001010101111011110100101011010110001100101111001001011011001100011111100111010000111101100111000011001001100110101010010011000001011010100011000011000111011011100001011000100001111001100100010000010111111011010010111111001100101001110110010101001011000111000101001101010111001100010101101100110110110010001011011000100000101000011010011101111100111100011100001101110000010100010110111001011011100100110011111100100000111000100111000110000011111111111011110111110100111101110100110101111010011011110111101110100110000100100010011000010111011101100010110001111110001111101011101010110100000110111110000101110101001110001111001111111100000000011011001000001001010001001110001001010010010000111101001011100000010101011011011100010101110100100001100111111110101101000111101000111101011110010110011101001100010110110001001011010010000010010111011001101001100100010000100100010000110100111001010010011001000011010100110101110111100011101011000101000110010000110010011100110110111011011111110110000101001011000100111100100111110111101111000100001110010001110010001000011101111010001110111001001011010100100110100111111000100010011110001101111010011110010101100111000011100101010000110110000001000001010100010001110101110010101110010111101110110100110010111000100010010111111000110101010100100011011111101010100010000101010100101000111010000110110000101010011101010001011110110010000111100101001110000000001000000001011011010011100010100000010111101011001101101011111100001010010100001101111011100110100010111000011110111011111000111110001111000100001101011101011000101011010101000111100110110010001111101110011111001010001101010110100001101111101100000111011110000100110000000111000110011000100001000101110111011000101000001101011110011010111110000011010010101000011011000100101011101101111010010010001101100000110001010111100101010100011100010100000001110010111110111101011000111010110101111111011001100000100111100110011010101111111010100001110010001011011110101100110010100111111110110111100110010101111010000101000101101010000110011111011111000111010111111011100000100001101011001000111101100001111010010101001000110101100110111000000101001010001110110111101111100110101111001100011100000010000011000001100001111110101011000111001000000111011111100011101010100111110000000111101110011011110010010110011111100100001110110110010111100001011101111110010100101001000010110111101101001010011100000011001110110100110100111110011001111001110000010110111010110010110110101101111100001110000100100101000011010111010000010111110111001001100100000000001100101110110000100001001011111111000010010011110011101001101110001000001110101111010110100010100000111001110000010001111111100100111001011010000111101001001110000010100011101110000001111010010010001110001000001101100001100011100110011110110001010111110001010000000010001101001000010111011101001001111111001001011110110111000101110010011111101100111110001100111011001111100010100100100001101100010111011100010010111001001111100101111111000101101110110100110110110001100101000000101011010110000000100000111101110111110000001111001100010101100001101011001011101110010011000001010110101110101111111011101100100001001110100010000010110100001101010000110111011111110101101001010011100100101110010011001111111101110000100100111110001100110010001101101100010011100100110000110001101011101010000000101000000001100101101001110001111001001110001100001111010101100110010100111000101000100001111001010110000100111110001001110110111001101111110001001000000110111000111000100111001111001000101001111111001101011011100011110011000010001100011100110100110111011100101001000010110100000101010111101101000111100110011011111011100000100100100011010101001110111100001110110101100111010001101011101110000101111110100100110110010010100111101010011110010110011010111111001111110011101011000010001111100000100111110100001111101001110100110011001010000111001101010110011110100011010010110110010011101101101110101110110100010010001001011111100110011110101111111111000111011101111011101010100000001101010101100001001111111111100011100101100011001100011110011000100010100110111001001111001000001111110010000001111000001101111101010110001011011100100100011111101101101110111001");
-		printCompressedMsg();
-		System.out.println();
-		System.out.println(code_book.get((byte)'\n'));
 	}
 	
-	public void codeBook2() {
-		getMark2(root, "");
-	}
-	
-	private void getMark2(HuffmanNode n, String mark) {
-		CustomComparator cmp = new CustomComparator();
-		
-		if (!n.hasChildren()) {
-			byte b = (byte)n.symbol.charAt(0);
-			code_book.put(b, mark);
-			return;
-		}
-		
-		if (cmp.compare(n.leftChild, n.rightChild) < 0) {
-			getMark2(n.leftChild, mark + "0");
-			getMark2(n.rightChild, mark + "1");
-		}
-		else {
-			getMark2(n.leftChild, mark + "0");
-			getMark2(n.rightChild, mark + "1");
-		}
-		
-
-	}
-	
-	public void constructTree() {
-		LinkedList<HuffmanNode> queue = new LinkedList<HuffmanNode>();
-		root = new HuffmanNode("", 0);
-		queue.add(root);
-		int tree_index = 0;
-		int leaf_index = 0;
-		while (queue.size() > 0) {
-			HuffmanNode tmp = queue.removeFirst();
-			if (tree_structure.charAt(tree_index) == '1') {
-				HuffmanNode l = new HuffmanNode("", 0);
-				HuffmanNode r = new HuffmanNode("", 0);
-				tmp.leftChild = l;
-				tmp.rightChild = r;
-				l.parent = tmp;
-				r.parent = tmp;
-				queue.add(l);
-				queue.add(r);
-			}
-			else {
-				tmp.symbol = leaf_values.get(leaf_index);
-				leaves.add(tmp);
-				leaf_index++;
-			}
-			tree_index++;
-		}
-	
-		HuffmanNode current = root;
-		
-		for (int i = 0; i < compressed_msg.length(); i++) {
-			char mark = compressed_msg.charAt(i);
-			if (mark == '0') {
-				current = current.leftChild;
-			} else {
-				current = current.rightChild;
-			}
-			
-			if (!current.hasChildren()) {
-				byte b = (byte)current.symbol.charAt(0);
-				msg.add(b);
-				//System.out.print((char)current.symbol.charAt(0));
-				current = root;
-			}
-		}
-	}
-	
+	//Read Complete Tree File
+	//File Format:
+	//TreeStructure \n
+	//Leaves \n
+	//Compressed Message \n
 	public void readTree(String filename) {
 		File file = new File(filename);
 		try {
@@ -312,143 +197,156 @@ public class Huffman {
 		}
 	}
 	
-	
-	public void printCompressedMsg() {
-		for (int i = 0; i < uncompressed_msg.length; i++) {
-			System.out.print(code_book.get(uncompressed_msg[i]));
-		}
-	}
-	
-	public void printLeaves() {
-		int length = leaves.size();
-		for (int i = 0; i < length; i++) {
-			byte b = (byte) leaves.get(i).symbol.charAt(0);
-			System.out.println(b);
-		}
-	}
-	
+	//Generates all compressed value for each possible bytes
 	public void generateCodeBook() {
-		getMark(root.rightChild, "");
-		getMark(root.leftChild, "");
+		getCode(root, "");
 	}
 	
-	private void getMark(HuffmanNode n, String mark) {
+	//Helper used to generating the codebook
+	private void getCode(HuffmanNode n, String code) {
 		if (!n.hasChildren()) {
-			mark = mark + n.mark;
 			byte b = (byte)n.symbol.charAt(0);
-			code_book.put(b, mark);
+			code_book.put(b, code);
 			return;
 		}
-		
-		getMark(n.leftChild, mark + n.mark);
-		getMark(n.rightChild, mark + n.mark);
+		getCode(n.leftChild, code + "0");
+		getCode(n.rightChild, code + "1");
 	}
 	
-	public void readKey(String filename) {
-		File file = new File(filename);		
-		try {
-			Scanner scr = new Scanner(file);
-			if (!scr.hasNextLine()) {
-				System.out.println("Invalid Key");
-				System.exit(0);
-			} else {
-				key = scr.nextLine();
-			}
-		} catch (FileNotFoundException e) {
-			System.out.println(e);
-			System.exit(0);
-		}
-	}
-	
-	public void readMsg(String str) {
-		try {
-			InputStream is = new FileInputStream(str);
-			while(is.available() > 0) {
-				int b = is.read();
-				input_count[b]++;
-				totalchars += 1;
-				msg.add((byte)b);	
-			}
-		} catch (IOException e) {
-			System.out.println(e);
-			System.exit(0);
-		}
-	}
-
-	public void calculateFrequency() {
-		for (int i = 0; i < ALPHABET_COUNT; i++) {
-			double f = (input_count[i]) / ((double)totalchars);	
-			
-			if (INCLUDE_ZEROS) {
-				freqs.add(new HuffmanNode((char)i + "", f));
-			}
-			
-			if (!INCLUDE_ZEROS) {
-				if (input_count[i] != 0)
-					freqs.add(new HuffmanNode((char)i + "", f));
-			}
-		}
-	}
-	
-	public void createFrequencyTree() {
-		while (freqs.size() > 1) {
-			Collections.sort(freqs, new CustomComparator());
-			HuffmanNode right = freqs.remove(0);
-			HuffmanNode left = freqs.remove(0);
-			HuffmanNode parent = new HuffmanNode(right.symbol + left.symbol, right.frequency + left.frequency);
-			
-			parent.rightChild = right;
-			parent.leftChild = left;
-			
-			freqs.add(parent);
-		}
-		root = freqs.get(0);
-	}
-	
-	@SuppressWarnings("unused")
-	private void printInputMsg() {
-		for (int i = 0; i < ALPHABET_COUNT; i++) {
-			if (INCLUDE_ZEROS) {
-				System.out.println(i + ": " + input_count[i]);
-			}
-			
-			if (!INCLUDE_ZEROS) {
-				if (input_count[i] != 0)
-					System.out.println(i + ": " + input_count[i]);
-			}
-		}
-	}
-	
-	@SuppressWarnings("unused")
-	private void printFrequency() {
-		int length = freqs.size();
-		for (int i = 0; i < length; i++) {
-			System.out.println(freqs.get(i).symbol + ": " + freqs.get(i).frequency);
-		}
-	}
-	
-	public void printBFS() {
-		printBFS(root);
-		System.out.println();
-	}    
-
-	private void printBFS(HuffmanNode n) {
+	//Construct tree using Structure/leaves/compressed message
+	public void constructTree() {
 		LinkedList<HuffmanNode> queue = new LinkedList<HuffmanNode>();
-		queue.add(n);
+		root = new HuffmanNode("", 0);
+		queue.add(root);
+		int tree_index = 0;
+		int leaf_index = 0;
 		while (queue.size() > 0) {
 			HuffmanNode tmp = queue.removeFirst();
-			if (tmp.hasChildren()) {
-				System.out.print("1");
-				queue.add(tmp.leftChild);
-				queue.add(tmp.rightChild);
+			if (tree_structure.charAt(tree_index) == '1') {
+				HuffmanNode l = new HuffmanNode("", 0);
+				HuffmanNode r = new HuffmanNode("", 0);
+				tmp.leftChild = l;
+				tmp.rightChild = r;
+				l.parent = tmp;
+				r.parent = tmp;
+				queue.add(l);
+				queue.add(r);
 			}
 			else {
-				System.out.print("0");
+				tmp.symbol = leaf_values.get(leaf_index);
 				leaves.add(tmp);
+				leaf_index++;
+			}
+			tree_index++;
+		}
+	
+		HuffmanNode current = root;
+		for (int i = 0; i < compressed_msg.length(); i++) {
+			char mark = compressed_msg.charAt(i);
+			if (mark == '0') {
+				current = current.leftChild;
+			} else {
+				current = current.rightChild;
+			}
+			if (!current.hasChildren()) {
+				byte b = (byte)current.symbol.charAt(0);
+				msg.add(b);
+				current = root;
 			}
 		}
+		
+		//Calculate Frequencies counts based off compressed message
+		int length = msg.size();
+		uncompressed_msg = new byte[length];
+		totalchars = length;
+		for (int i = 0; i < length; i++) {
+			uncompressed_msg[i] = msg.get(i); 
+			input_count[(int)msg.get(i)]++;
+		}
+		
+		//Calculate frequencies and store then in freqs
+		calculateFrequency();
+		
+		//For each Leaf check the frequency for the same symbol and copy the value
+		for (HuffmanNode n: leaves) {
+			for (HuffmanNode f : freqs) {
+				if (n.symbol.equals(f.symbol)) {
+					n.frequency = f.frequency;
+					break;
+				}
+			}
+		}
+		
+		buildUp();
 	}
 	
+	//Build up from the leaves of the tree until you reach the node. Populating with frequencies and symbols.
+	public void buildUp() {
+		LinkedList<HuffmanNode> nodes;
+		CustomComparator cmp = new CustomComparator();
+		LinkedList<HuffmanNode> queue = new LinkedList<HuffmanNode>();
+		ArrayList<HuffmanNode> excludelist = new ArrayList<HuffmanNode>();
+		while (true) {
+			nodes = new LinkedList<HuffmanNode>();
+			queue.add(root);
+			while (queue.size() > 0) {
+				HuffmanNode tmp = queue.removeFirst();
+				if (tmp.hasChildren() && tmp.symbol.equals("")) {
+					queue.add(tmp.leftChild);
+					queue.add(tmp.rightChild);
+				}
+				else {
+					if (!excludelist.contains(tmp)) {
+						nodes.addFirst(tmp);
+					}
+				}
+			}
+			
+			HuffmanNode r = nodes.removeFirst();
+			HuffmanNode l = nodes.removeFirst();
+			
+			if (cmp.compare(l, r) < 0) {
+				r.parent.symbol = l.symbol + r.symbol;
+			} else {
+				r.parent.symbol = r.symbol + l.symbol;
+			}
+			
+			r.parent.frequency = r.frequency + l.frequency;
+			
+			excludelist.add(r);
+			excludelist.add(l);
+			
+			if (r.parent == root)
+				break;
+		}
+	}
+
+	//Extract Mark from a tree that is already built.
+	//Done with DFS traversal
+	public String extractMark() {
+		String mark = "";
+		CustomComparator cmp = new CustomComparator();
+		LinkedList<HuffmanNode> queue = new LinkedList<HuffmanNode>();
+		queue.add(root);
+		while (queue.size() > 0) {
+			HuffmanNode n = queue.removeFirst();
+			if (n.hasChildren()) {
+				queue.add(n.leftChild);
+				queue.add(n.rightChild);
+				
+				if (cmp.compare(n.leftChild, n.rightChild) < 0) {
+					mark += 0;
+				}
+				else {
+					mark += 1;
+				}
+			}
+		}
+		return mark;
+	}
+	
+	//Mark tree populated with frequencies and symbols
+	//Swap children in DFS fashion based on custom comparer
 	public void markTree() {
 		LinkedList<HuffmanNode> queue = new LinkedList<HuffmanNode>();
 		int index = 0;
@@ -473,13 +371,9 @@ public class Huffman {
 				}
 				
 				if (mark == '1') {
-					//n.rightChild.mark = '1';
-					//n.leftChild.mark = '0';
 					n.rightChild = least_weighty;					
 					n.leftChild = most_weighty;
 				} else if (mark == '0') {
-					//n.rightChild.mark = '0';
-					//n.leftChild.mark = '1';
 					n.rightChild = most_weighty;
 					n.leftChild = least_weighty;
 				}
@@ -491,4 +385,86 @@ public class Huffman {
 			}	
 		}
 	}
+	
+	//Calculate frequencies based on input_count and totalchars
+	//Fill global Arraylist freqs
+	public void calculateFrequency() {
+		for (int i = 0; i < ALPHABET_COUNT; i++) {
+			double f = (input_count[i]) / ((double)totalchars);	
+			freqs.add(new HuffmanNode((char)i + "", f));
+		}
+	}
+	
+	//Add the two lowest frequencies repeatedly until 1 node exists
+	public void createFrequencyTree() {
+		while (freqs.size() > 1) {
+			Collections.sort(freqs, new CustomComparator());
+			HuffmanNode right = freqs.remove(0);
+			HuffmanNode left = freqs.remove(0);
+			HuffmanNode parent = new HuffmanNode(right.symbol + left.symbol, right.frequency + left.frequency);
+			
+			parent.rightChild = right;
+			parent.leftChild = left;
+			
+			freqs.add(parent);
+		}
+		root = freqs.get(0);
+	}
+	
+	public void printUncompressedMsg() {
+		for (int i = 0; i < uncompressed_msg.length; i++) {
+			System.out.print((char)uncompressed_msg[i]);
+		}
+	}
+	
+	//I Print Compressed Msg
+	public void printCompressedMsg() {
+		for (int i = 0; i < uncompressed_msg.length; i++) {
+			System.out.print(code_book.get(uncompressed_msg[i]));
+		}
+	}
+	
+	//I Print the leaves
+	public void printLeaves() {
+		int length = leaves.size();
+		for (int i = 0; i < length; i++) {
+			byte b = (byte) leaves.get(i).symbol.charAt(0);
+			System.out.println(b);
+		}
+	}
+	
+	//Print the inputmessage
+	@SuppressWarnings("unused")
+	private void printInputMsg() {
+		for (int i = 0; i < ALPHABET_COUNT; i++) {
+			System.out.println(i + ": " + input_count[i]);
+		}
+	}
+	
+	//Print the public call tree structure in a DFS fashion
+	public void printTreeStructure() {
+		printTreeStructure(root);
+		System.out.println();
+	}    
+
+	//Print the tree helper function
+	private void printTreeStructure(HuffmanNode n) {
+		LinkedList<HuffmanNode> queue = new LinkedList<HuffmanNode>();
+		queue.add(n);
+		while (queue.size() > 0) {
+			HuffmanNode tmp = queue.removeFirst();
+			if (tmp.hasChildren()) {
+				System.out.print("1");
+				queue.add(tmp.leftChild);
+				queue.add(tmp.rightChild);
+			}
+			else {
+				System.out.print("0");
+				leaves.add(tmp);
+			}
+		}
+	}
+	
+
+	
 }
