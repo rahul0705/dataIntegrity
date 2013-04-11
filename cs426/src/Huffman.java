@@ -37,13 +37,38 @@ public class Huffman {
 	private HuffmanNode root;
 	
 	public static void main(String[] args) {
-		String keyfile, inputfile, treefile;
-		keyfile = "input/bst_test_key.txt";
-		inputfile = "input/huff_test_mssg.txt";	
-		treefile = "output/1b_dirty.txt";
 		
-		Huffman h = new Huffman(keyfile, inputfile);
-		//Huffman h = new Huffman(keyfile, treefile, 1);
+		if (args.length == 0) {
+			System.out.println("Incorrect Usage");
+			return;
+		}
+		
+		String keyfile = null;
+		String inputfile = null;
+		String treefile = null;
+		boolean print = false;
+		
+		for(int i = 0; i < args.length; i++){
+			if(args[i].equals("-t")){
+				treefile = args[++i];
+			}
+			if(args[i].equals("-k")){
+				keyfile = args[++i];
+			}
+			if(args[i].equals("-d")){
+				inputfile = args[++i];
+			}
+			if(args[i].equals("-uncom")) {
+				print = true;
+			}
+		}
+		
+		if (keyfile != null && inputfile != null) {
+			Huffman h = new Huffman(keyfile, inputfile);
+		}
+		else if (keyfile != null  && treefile != null) {
+			Huffman h = new Huffman(keyfile, treefile, print);
+		}
 	}
 	
 	public Huffman(String file1, String file2) {
@@ -75,7 +100,7 @@ public class Huffman {
 		printCompressedMsg();
 	}
 	
-	public Huffman(String file1, String file2, int val) {
+	public Huffman(String file1, String file2, boolean print) {
 		freqs = new ArrayList<HuffmanNode>();
 		msg = new ArrayList<Byte>();
 		
@@ -111,7 +136,8 @@ public class Huffman {
 		else 
 			System.out.println("Tree Validated");
 		
-		//printUncompressedMsg();
+		if (print)
+			printUncompressedMsg();
 	}
 
 	//Read Key file
