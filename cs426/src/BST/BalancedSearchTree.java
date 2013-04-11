@@ -143,7 +143,8 @@ public class BalancedSearchTree{
 		for(int i=0;i<hmac.length();i++){
 			if(mark.charAt(i)!=hmac.charAt(i)){
 				System.out.println("Modified");
-				pinpointModification(hmac);
+				if(cgtFlag)
+					pinpointModification(hmac);
 				return;
 			}
 		}
