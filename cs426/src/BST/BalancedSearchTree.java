@@ -20,7 +20,7 @@ public class BalancedSearchTree{
 	private LinkedList<BSTNode> BFSQueue;
 	private int markIndex = 0;
 	private ArrayList<BSTNode> leaves;
-
+	private boolean cgtFlag = false;
 
 	public BalancedSearchTree(){
 		this.data = new ArrayList<String>();
@@ -61,6 +61,10 @@ public class BalancedSearchTree{
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public void setCGTFlag(){
+		cgtFlag = true;
 	}
 	
 	public void buildToValidate(){
@@ -130,18 +134,45 @@ public class BalancedSearchTree{
 	
 	public void validate(){
 		Collections.sort(data,new SortData());
-		String hmac= HMAC.toBitString(HMAC.encode(this.toString().getBytes(), key));
+		String hmac = new String();
+		if(cgtFlag){
+			hmac = HMAC.cgtEncode(data, key);
+		}else{
+			hmac= HMAC.toBitString(HMAC.encode(this.toString().getBytes(), key));
+		}
 		for(int i=0;i<hmac.length();i++){
 			if(mark.charAt(i)!=hmac.charAt(i)){
 				System.out.println("Modified");
+				pinpointModification(hmac);
 				return;
 			}
 		}
-		System.out.println("Not Modified");
+		System.out.println("Not Modified");	
+	}
+	
+	public void pinpointModification(String hmac){
+		int countHMAC = (int)(Math.log10(data.size())/Math.log10(2));
+		String item = new String();
+		int end = (countHMAC+1)*256;
+		int start = end-256;
+		for(int i = 0; i < countHMAC; i++){
+			if((mark.substring(start,end)).equals(hmac.substring(start,end))){
+				item+="0";
+			}else{
+				item+="1";
+			}
+			end-=256;
+			start=end-256;
+		}
+		System.out.println(Integer.parseInt(item,2));
 	}
 	
 	public void buildTree(){
-		mark = HMAC.toBitString(HMAC.encode(this.toString().getBytes(), key));
+		if(cgtFlag){
+			mark = HMAC.cgtEncode(data, key);
+		}else{
+			mark = HMAC.toBitString(HMAC.encode(this.toString().getBytes(), key));
+		}
 		root.setStart(0);
 		root.setEnd(data.size());
 		buildTreeQueue.addLast(root);

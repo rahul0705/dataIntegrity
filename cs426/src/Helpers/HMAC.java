@@ -8,8 +8,32 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 public class HMAC {
-	public static String encode(ArrayList<String> data, String key){
-		String mark = "";
+	public static String cgtEncode(ArrayList<String> data, String key){
+		int countHMAC = (int)(Math.log10(data.size())/Math.log10(2));
+		String mark = new String();
+		String message = new String();
+		for(int t = 0; t < data.size(); t++){
+			message+=data.get(t);
+		}		
+		mark = toBitString(encode(message.getBytes(),key));
+		message = new String();
+		for(int j = 0; j < countHMAC; j++){
+			for(int i=0;i<data.size(); i++){
+				String index = Integer.toBinaryString(i + 1);
+				if(index.length()<countHMAC){
+					String leftPad = "";
+					for(int k=0;k<countHMAC-index.length();k++){
+						leftPad+="0";
+					}
+					index=leftPad+index;
+				}
+				if(index.charAt(index.length() - j - 1) == '1'){
+					message+=data.get(i);
+				}
+			}
+			mark+=toBitString(encode(message.getBytes(),key));
+			message = new String();
+		}
 		return mark;
 	}
 	public static byte[] encode(byte[] message, String key){
