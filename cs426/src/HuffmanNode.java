@@ -42,7 +42,7 @@ public class HuffmanNode {
 		if (leftChild != null) {
 			children.add(leftChild);
 		}
-		
+
 		System.out.println(prefix + (isTail ? "^-->" : "|-->") + frequency);
 		for (Iterator<HuffmanNode> iterator = children.iterator(); iterator.hasNext(); ) {
 			iterator.next().print(prefix + (isTail ? "    " : "|  "), !iterator.hasNext());

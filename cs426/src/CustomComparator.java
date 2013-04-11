@@ -15,7 +15,7 @@ public class CustomComparator implements Comparator<HuffmanNode>{
 		
 		if ((byte)n1.symbol.charAt(0) > (byte)n2.symbol.charAt(0))
 			return 1;
-		else if (n1.symbol.charAt(0) < n2.symbol.charAt(0))
+		else if ((byte)n1.symbol.charAt(0) < (byte)n2.symbol.charAt(0))
 			return -1;
 		
 		return 0;
