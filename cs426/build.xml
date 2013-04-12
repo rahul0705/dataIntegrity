@@ -50,7 +50,6 @@
     </target>
     <target name="TestBalancedSearchTree">
         <java classname="BST.TestBalancedSearchTree" failonerror="true" fork="yes">
-            <arg line="-k input/bst_test_key.txt -t input/bst_test_tree_cgt_clean.txt -cgt"/>
             <classpath refid="cs426.classpath"/>
         </java>
     </target>
