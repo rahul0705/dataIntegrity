@@ -48,8 +48,15 @@
         <property name="build.compiler" value="org.eclipse.jdt.core.JDTCompilerAdapter"/>
         <antcall target="build"/>
     </target>
-    <target name="TestBalancedSearchTree">
-        <java classname="BST.TestBalancedSearchTree" failonerror="true" fork="yes">
+    <target name="BST">
+        <java classname="BST.BalancedSearchTree" failonerror="true" fork="yes">
+            <arg line="-k input/test_key.txt -d input/bst_test_data.txt"/>
+            <classpath refid="cs426.classpath"/>
+        </java>
+    </target>
+    <target name="Huffman">
+        <java classname="Huffman.Huffman" failonerror="true" fork="yes">
+            <arg line="-k input/test_key.txt -d input/huff_test_mssg.txt"/>
             <classpath refid="cs426.classpath"/>
         </java>
     </target>

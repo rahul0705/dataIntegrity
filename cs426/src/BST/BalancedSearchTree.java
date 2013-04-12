@@ -253,4 +253,36 @@ public class BalancedSearchTree{
 		}
 		return s;
 	}
+	
+	public static void main(String args[]){
+		boolean treeFlag = false;
+		BalancedSearchTree bst = new BalancedSearchTree();
+		
+		if (args.length == 0) {
+			System.out.println("Incorrect Usage");
+			return;
+		}
+		
+		for(int i = 0; i < args.length; i++){
+			if(args[i].equals("-t")){
+				bst.readTree(args[++i]);
+				treeFlag = true;
+			}
+			if(args[i].equals("-k")){
+				bst.readKey(args[++i]);
+			}
+			if(args[i].equals("-d")){
+				bst.readData(args[++i]);
+			}
+			if(args[i].equals("-cgt")){
+				bst.setCGTFlag();
+			}
+		}
+		if(treeFlag){
+			bst.buildToValidate();
+		}else{
+			bst.buildTree();
+			bst.printTree();
+		}
+	}
 }
