@@ -1,3 +1,4 @@
+package Huffman;
 import java.util.Comparator;
 
 public class CustomComparator implements Comparator<HuffmanNode>{
